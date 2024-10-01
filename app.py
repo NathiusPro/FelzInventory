@@ -81,7 +81,7 @@ def inventory_app():
         
         if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
-            st.experimental_rerun()
+            # Instead of using st.experimental_rerun(), we reset the branch name and the view will update naturally
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -128,7 +128,7 @@ def inventory_app():
                 add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
                 st.session_state['existing_barcode'] = None  # Limpiar después de procesar
                 st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
-                st.experimental_rerun()  # Recargar para limpiar la vista
+                # No need for experimental_rerun, Streamlit will rerun automatically
 
         st.markdown("---")
 
@@ -154,7 +154,7 @@ def inventory_app():
         st.markdown("---")
         if st.button("Cambiar Sucursal"):
             st.session_state['branch_name'] = None
-            st.experimental_rerun()
+            # No need for experimental_rerun, Streamlit will rerun automatically
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
