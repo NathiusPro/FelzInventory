@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Directorio para almacenar los archivos CSV de las sucursales
-branch_dir = './branches'
+# Get the absolute directory path for storing CSV files
+branch_dir = os.path.abspath('./branches')
 if not os.path.exists(branch_dir):
     os.makedirs(branch_dir)
+    st.write(f"Created directory: {branch_dir}")
 
 # Variables globales
 branches = ["Coyoacán", "Cuautitlán Izcalli"]  # Sucursales predefinidas
@@ -19,14 +20,17 @@ def initialize_default_branches():
     for branch_name in branches:
         branch_file = get_branch_file(branch_name)
         if not os.path.exists(branch_file):
+            # Crear DataFrame vacío y guardar CSV
             df = pd.DataFrame(columns=['Barcode', 'Quantity'])
             df.to_csv(branch_file, index=False)
+            st.write(f"Created CSV file for branch: {branch_file}")
 
 # Función para cargar el inventario desde el archivo CSV
 def load_inventory(branch_file):
     if os.path.exists(branch_file):
         return pd.read_csv(branch_file)
     else:
+        st.warning(f"File not found: {branch_file}")
         return pd.DataFrame(columns=['Barcode', 'Quantity'])
 
 # Función para agregar o actualizar un producto en el inventario
@@ -47,6 +51,7 @@ def add_to_inventory(branch_file, barcode, quantity):
 
     # Guardar el archivo CSV actualizado
     df.to_csv(branch_file, index=False)
+    st.write(f"Inventory updated: {branch_file}")
 
 # Función para eliminar un producto del inventario por código de barras
 def delete_from_inventory(branch_file, barcode):
@@ -59,6 +64,7 @@ def delete_from_inventory(branch_file, barcode):
         df = df[df['Barcode'] != barcode]
         df.to_csv(branch_file, index=False)
         st.success(f"Producto con código {barcode} eliminado.")
+        st.write(f"Updated inventory after deletion: {branch_file}")
     else:
         st.error(f"Producto con código {barcode} no encontrado.")
 
@@ -81,7 +87,6 @@ def inventory_app():
         
         if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
-            # Instead of using st.experimental_rerun(), we reset the branch name and the view will update naturally
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -128,7 +133,6 @@ def inventory_app():
                 add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
                 st.session_state['existing_barcode'] = None  # Limpiar después de procesar
                 st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
-                # No need for experimental_rerun, Streamlit will rerun automatically
 
         st.markdown("---")
 
@@ -154,7 +158,6 @@ def inventory_app():
         st.markdown("---")
         if st.button("Cambiar Sucursal"):
             st.session_state['branch_name'] = None
-            # No need for experimental_rerun, Streamlit will rerun automatically
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
