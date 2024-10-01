@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from io import BytesIO
 
-# Directorio para almacenar los archivos CSV de las sucursales (local, but not in cloud)
+# Directorio para almacenar los archivos CSV de las sucursales
 branch_dir = './branches'
 if not os.path.exists(branch_dir):
     os.makedirs(branch_dir)
@@ -93,16 +93,16 @@ def inventory_app():
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
 
-    # Handle branch selection logic
+    # Branch selection logic
     if st.session_state['branch_name'] is None:
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Use a checkbox to confirm selection instead of using a button
-        confirm = st.checkbox("Confirmar selección de sucursal")
-
-        if confirm:
+        # Use button to confirm branch selection
+        if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
+
+    # After branch is selected
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -113,8 +113,8 @@ def inventory_app():
         # Formulario para agregar o actualizar productos
         with st.form("add_inventory_form", clear_on_submit=False):
             st.markdown("### Agregar/Actualizar Inventario")
-            barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()  # Elimina espacios
-            quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
+            barcode = st.text_input("Escanea el código de barras:").strip()  # Elimina espacios
+            quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1)
 
             # Botón para agregar/actualizar el inventario
             submitted = st.form_submit_button("Agregar/Actualizar Inventario")
@@ -139,7 +139,7 @@ def inventory_app():
         # Si el código ya existe, mostrar cantidad actual y preguntar por nueva cantidad
         if 'existing_barcode' in st.session_state and st.session_state['existing_barcode']:
             st.warning(f"El código {st.session_state['existing_barcode']} ya existe con {st.session_state['existing_quantity']} unidades.")
-            new_quantity = st.number_input("Ingresa la nueva cantidad para sobrescribir:", min_value=1, step=1, key="new_quantity_field")
+            new_quantity = st.number_input("Ingresa la nueva cantidad para sobrescribir:", min_value=1, step=1)
 
             if st.button("Confirmar Acción"):
                 df = add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
@@ -151,7 +151,7 @@ def inventory_app():
         # Formulario para eliminar productos
         with st.form("delete_inventory_form", clear_on_submit=True):
             st.markdown("### Eliminar Producto")
-            delete_barcode = st.text_input("Eliminar producto con código de barras:", key="delete_barcode_field").strip()  # Elimina espacios
+            delete_barcode = st.text_input("Eliminar producto con código de barras:").strip()  # Elimina espacios
             delete_submitted = st.form_submit_button("Eliminar Producto")
 
             if delete_submitted:
@@ -169,9 +169,9 @@ def inventory_app():
         # Agregar botón de descarga de CSV
         generate_download_link(df, branch_name)
 
-        # Use a checkbox to reset branch selection instead of a button
-        if st.checkbox("Cambiar de Sucursal"):
-            st.session_state['branch_name'] = None
+        # Button to reset branch selection
+        if st.button("Cambiar Sucursal"):
+            st.session_state['branch_name'] = None  # Clear the branch selection state
             st.session_state['existing_barcode'] = None
 
 # Ejecución de la aplicación
