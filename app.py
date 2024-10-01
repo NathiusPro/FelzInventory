@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+from io import BytesIO
 
-# Get the absolute directory path for storing CSV files
-branch_dir = os.path.abspath('./branches')
+# Directorio para almacenar los archivos CSV de las sucursales (local, but not in cloud)
+branch_dir = './branches'
 if not os.path.exists(branch_dir):
     os.makedirs(branch_dir)
-    st.write(f"Created directory: {branch_dir}")
 
 # Variables globales
 branches = ["Coyoacán", "Cuautitlán Izcalli"]  # Sucursales predefinidas
@@ -20,17 +20,14 @@ def initialize_default_branches():
     for branch_name in branches:
         branch_file = get_branch_file(branch_name)
         if not os.path.exists(branch_file):
-            # Crear DataFrame vacío y guardar CSV
             df = pd.DataFrame(columns=['Barcode', 'Quantity'])
             df.to_csv(branch_file, index=False)
-            st.write(f"Created CSV file for branch: {branch_file}")
 
-# Función para cargar el inventario desde el archivo CSV
+# Función para cargar el inventario desde el archivo CSV o crear uno en memoria
 def load_inventory(branch_file):
     if os.path.exists(branch_file):
         return pd.read_csv(branch_file)
     else:
-        st.warning(f"File not found: {branch_file}")
         return pd.DataFrame(columns=['Barcode', 'Quantity'])
 
 # Función para agregar o actualizar un producto en el inventario
@@ -51,7 +48,7 @@ def add_to_inventory(branch_file, barcode, quantity):
 
     # Guardar el archivo CSV actualizado
     df.to_csv(branch_file, index=False)
-    st.write(f"Inventory updated: {branch_file}")
+    return df
 
 # Función para eliminar un producto del inventario por código de barras
 def delete_from_inventory(branch_file, barcode):
@@ -64,9 +61,9 @@ def delete_from_inventory(branch_file, barcode):
         df = df[df['Barcode'] != barcode]
         df.to_csv(branch_file, index=False)
         st.success(f"Producto con código {barcode} eliminado.")
-        st.write(f"Updated inventory after deletion: {branch_file}")
     else:
         st.error(f"Producto con código {barcode} no encontrado.")
+    return df
 
 # Función para mostrar el inventario actual
 def show_inventory(branch_file):
@@ -75,6 +72,21 @@ def show_inventory(branch_file):
         st.table(df)
     else:
         st.write("No hay productos en el inventario.")
+    return df
+
+# Función para generar un botón de descarga de CSV
+def generate_download_link(df, branch_name):
+    output = BytesIO()
+    df.to_csv(output, index=False)
+    output.seek(0)
+
+    # Crear botón de descarga
+    st.download_button(
+        label=f"Descargar inventario de {branch_name} como CSV",
+        data=output,
+        file_name=f'{branch_name}_inventory.csv',
+        mime='text/csv'
+    )
 
 # Función principal para gestionar la pantalla
 def inventory_app():
@@ -118,7 +130,7 @@ def inventory_app():
                         st.session_state['existing_quantity'] = df.loc[df['Barcode'] == barcode, 'Quantity'].values[0]
                     else:
                         # Agregar el nuevo producto directamente
-                        add_to_inventory(branch_file, barcode, quantity)
+                        df = add_to_inventory(branch_file, barcode, quantity)
                         st.session_state['existing_barcode'] = None  # Limpiar si se agregó un nuevo producto
                         st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
                 else:
@@ -130,7 +142,7 @@ def inventory_app():
             new_quantity = st.number_input("Ingresa la nueva cantidad para sobrescribir:", min_value=1, step=1, key="new_quantity_field")
 
             if st.button("Confirmar Acción"):
-                add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
+                df = add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
                 st.session_state['existing_barcode'] = None  # Limpiar después de procesar
                 st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
 
@@ -144,7 +156,7 @@ def inventory_app():
 
             if delete_submitted:
                 if delete_barcode:  # Validar que se haya ingresado un código de barras
-                    delete_from_inventory(branch_file, delete_barcode)
+                    df = delete_from_inventory(branch_file, delete_barcode)
                 else:
                     st.error("Por favor ingresa un código de barras válido.")
 
@@ -152,7 +164,10 @@ def inventory_app():
 
         # Mostrar el inventario actual
         st.markdown(f"### Inventario de la Sucursal: **{branch_name}**")
-        show_inventory(branch_file)
+        df = show_inventory(branch_file)
+
+        # Agregar botón de descarga de CSV
+        generate_download_link(df, branch_name)
 
         # Botón para regresar a la selección de sucursal
         st.markdown("---")
