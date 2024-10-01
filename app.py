@@ -93,14 +93,12 @@ def inventory_app():
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
 
-    # Manejar el cambio de sucursal fuera de la lógica de submit para evitar doble clic
     if st.session_state['branch_name'] is None:
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
         
         if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
-
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -108,31 +106,59 @@ def inventory_app():
         st.write(f"**Sucursal seleccionada:** {branch_name}")
         st.markdown("---")
 
+        # Variables de control para saber si ya existe el código de barras
+        if 'existing_barcode' not in st.session_state:
+            st.session_state['existing_barcode'] = None
+
         # Formulario para agregar o actualizar productos
-        barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()
-        quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
+        with st.form("add_inventory_form", clear_on_submit=False):
+            st.markdown("### Agregar/Actualizar Inventario")
+            barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()  # Elimina espacios
+            quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
 
-        # Botón para agregar/actualizar el inventario
-        if st.button("Agregar/Actualizar Inventario"):
-            if barcode:
-                df = load_inventory(branch_file)
-                df['Barcode'] = df['Barcode'].astype(str)
+            # Botón para agregar/actualizar el inventario
+            submitted = st.form_submit_button("Agregar/Actualizar Inventario")
 
-                if barcode in df['Barcode'].values:
-                    st.session_state['existing_barcode'] = barcode
-                    st.session_state['existing_quantity'] = df.loc[df['Barcode'] == barcode, 'Quantity'].values[0]
-                    add_to_inventory(branch_file, barcode, quantity)
+            if submitted:
+                if barcode:
+                    # Comprobar si el producto ya existe en el inventario
+                    df = load_inventory(branch_file)
+                    df['Barcode'] = df['Barcode'].astype(str)
+
+                    if barcode in df['Barcode'].values:
+                        st.session_state['existing_barcode'] = barcode
+                        st.session_state['existing_quantity'] = df.loc[df['Barcode'] == barcode, 'Quantity'].values[0]
+                    else:
+                        # Agregar el nuevo producto directamente
+                        df = add_to_inventory(branch_file, barcode, quantity)
+                        st.session_state['existing_barcode'] = None  # Limpiar si se agregó un nuevo producto
+                        st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
                 else:
-                    df = add_to_inventory(branch_file, barcode, quantity)
+                    st.error("Por favor ingresa un código de barras válido.")
+
+        # Si el código ya existe, mostrar cantidad actual y preguntar por nueva cantidad
+        if st.session_state['existing_barcode']:
+            st.warning(f"El código {st.session_state['existing_barcode']} ya existe con {st.session_state['existing_quantity']} unidades.")
+            new_quantity = st.number_input("Ingresa la nueva cantidad para sobrescribir:", min_value=1, step=1, key="new_quantity_field")
+
+            if st.button("Confirmar Acción"):
+                df = add_to_inventory(branch_file, st.session_state['existing_barcode'], new_quantity)
+                st.session_state['existing_barcode'] = None  # Limpiar después de procesar
+                st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
 
         st.markdown("---")
 
         # Formulario para eliminar productos
-        delete_barcode = st.text_input("Eliminar producto con código de barras:", key="delete_barcode_field").strip()
-        
-        if st.button("Eliminar Producto"):
-            if delete_barcode:  # Validar que se haya ingresado un código de barras
-                df = delete_from_inventory(branch_file, delete_barcode)
+        with st.form("delete_inventory_form", clear_on_submit=True):
+            st.markdown("### Eliminar Producto")
+            delete_barcode = st.text_input("Eliminar producto con código de barras:", key="delete_barcode_field").strip()  # Elimina espacios
+            delete_submitted = st.form_submit_button("Eliminar Producto")
+
+            if delete_submitted:
+                if delete_barcode:  # Validar que se haya ingresado un código de barras
+                    df = delete_from_inventory(branch_file, delete_barcode)
+                else:
+                    st.error("Por favor ingresa un código de barras válido.")
 
         st.markdown("---")
 
@@ -144,10 +170,9 @@ def inventory_app():
         generate_download_link(df, branch_name)
 
         # Botón para regresar a la selección de sucursal
+        st.markdown("---")
         if st.button("Cambiar Sucursal"):
             st.session_state['branch_name'] = None
-            st.session_state['barcode_field'] = None
-            st.session_state['delete_barcode_field'] = None
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
