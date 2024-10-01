@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from io import BytesIO
 
-# Directorio para almacenar los archivos CSV de las sucursales (local, but not in cloud)
+# Directorio para almacenar los archivos CSV de las sucursales
 branch_dir = './branches'
 if not os.path.exists(branch_dir):
     os.makedirs(branch_dir)
@@ -93,17 +93,17 @@ def inventory_app():
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
 
-    # Branch selection logic
+    # Step 1: Branch selection logic
     if st.session_state['branch_name'] is None:
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Button for branch selection
+        # Button for branch selection, only proceed when clicked
         if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
-            # Streamlit naturally reruns after the session state is updated
+            st.experimental_rerun()  # This forces a rerun to update session state immediately
 
-    # If branch is selected, proceed with the rest of the app
+    # Step 2: If branch is selected, proceed with the rest of the app
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -173,7 +173,7 @@ def inventory_app():
         # Botón para cambiar la sucursal seleccionada
         if st.button("Cambiar Sucursal"):
             st.session_state['branch_name'] = None  # Clear the branch selection state
-            # Streamlit will rerun on the next iteration naturally
+            st.experimental_rerun()  # Trigger rerun to clear out the selected branch
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
