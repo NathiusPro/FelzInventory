@@ -90,6 +90,7 @@ def generate_download_link(df, branch_name):
 
 # Función principal para gestionar la pantalla
 def inventory_app():
+    # Initialize session state for branch selection if not already set
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
 
@@ -98,10 +99,9 @@ def inventory_app():
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Button for branch selection, only proceed when clicked
+        # Button for branch selection
         if st.button("Seleccionar Sucursal"):
-            st.session_state['branch_name'] = branch_name
-            st.experimental_rerun()  # This forces a rerun to update session state immediately
+            st.session_state['branch_name'] = branch_name  # This will trigger a rerun automatically
 
     # Step 2: If branch is selected, proceed with the rest of the app
     else:
@@ -172,8 +172,7 @@ def inventory_app():
 
         # Botón para cambiar la sucursal seleccionada
         if st.button("Cambiar Sucursal"):
-            st.session_state['branch_name'] = None  # Clear the branch selection state
-            st.experimental_rerun()  # Trigger rerun to clear out the selected branch
+            st.session_state['branch_name'] = None  # Clear the branch selection state, triggers a natural rerun
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
