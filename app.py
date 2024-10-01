@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from io import BytesIO
 
-# Directorio para almacenar los archivos CSV de las sucursales
+# Directorio para almacenar los archivos CSV de las sucursales (local, but not in cloud)
 branch_dir = './branches'
 if not os.path.exists(branch_dir):
     os.makedirs(branch_dir)
@@ -90,11 +90,10 @@ def generate_download_link(df, branch_name):
 
 # Función principal para gestionar la pantalla
 def inventory_app():
-    # Initialize the session state for branch selection
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
 
-    # Check if branch has been selected
+    # Branch selection logic
     if st.session_state['branch_name'] is None:
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
@@ -102,6 +101,7 @@ def inventory_app():
         # Button for branch selection
         if st.button("Seleccionar Sucursal"):
             st.session_state['branch_name'] = branch_name
+            # Streamlit naturally reruns after the session state is updated
 
     # If branch is selected, proceed with the rest of the app
     else:
@@ -173,6 +173,7 @@ def inventory_app():
         # Botón para cambiar la sucursal seleccionada
         if st.button("Cambiar Sucursal"):
             st.session_state['branch_name'] = None  # Clear the branch selection state
+            # Streamlit will rerun on the next iteration naturally
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
