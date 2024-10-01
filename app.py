@@ -97,10 +97,10 @@ def inventory_app():
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Reemplazar la lógica del botón para que no pida doble clic
         if st.button("Seleccionar Sucursal"):
+            # Update session state and trigger rerun safely
             st.session_state['branch_name'] = branch_name
-            st.experimental_rerun()  # Forzar la recarga para reflejar el cambio de sucursal
+            st.experimental_rerun()  # Force a reload to reflect the branch change
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -171,10 +171,13 @@ def inventory_app():
         # Agregar botón de descarga de CSV
         generate_download_link(df, branch_name)
 
-        # Botón para regresar a la selección de sucursal
+        # Manejar cambio de sucursal de forma segura
         if st.button("Cambiar Sucursal"):
+            # Reset session state and trigger rerun safely
             st.session_state['branch_name'] = None
-            st.experimental_rerun()  # Forzar la recarga para reflejar el cambio de sucursal
+            st.session_state['barcode_field'] = ""
+            st.session_state['delete_barcode_field'] = ""
+            st.experimental_rerun()  # Force a reload to reset the app
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
