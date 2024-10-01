@@ -110,34 +110,27 @@ def inventory_app():
         if 'existing_barcode' not in st.session_state:
             st.session_state['existing_barcode'] = None
 
-        # Formulario para agregar o actualizar productos
-        with st.form("add_inventory_form", clear_on_submit=False):
-            st.markdown("### Agregar/Actualizar Inventario")
-            barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()  # Elimina espacios
-            quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
+        # Controlar si ya existe el producto en inventario
+        if st.session_state['existing_barcode'] is None:
+            # Formulario para agregar o actualizar productos
+            with st.form("add_inventory_form", clear_on_submit=False):
+                st.markdown("### Agregar/Actualizar Inventario")
+                barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()  # Elimina espacios
+                quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
 
-            # Botón para agregar/actualizar el inventario
-            submitted = st.form_submit_button("Agregar/Actualizar Inventario")
+                # Botón para agregar/actualizar el inventario
+                submitted = st.form_submit_button("Agregar/Actualizar Inventario")
 
-            if submitted:
-                if barcode:
-                    # Comprobar si el producto ya existe en el inventario
+                if submitted and barcode:
                     df = load_inventory(branch_file)
                     df['Barcode'] = df['Barcode'].astype(str)
-
                     if barcode in df['Barcode'].values:
                         st.session_state['existing_barcode'] = barcode
                         st.session_state['existing_quantity'] = df.loc[df['Barcode'] == barcode, 'Quantity'].values[0]
                     else:
-                        # Agregar el nuevo producto directamente
                         df = add_to_inventory(branch_file, barcode, quantity)
-                        st.session_state['existing_barcode'] = None  # Limpiar si se agregó un nuevo producto
-                        st.session_state['existing_quantity'] = None  # Limpiar cualquier cantidad existente
-                else:
-                    st.error("Por favor ingresa un código de barras válido.")
-
-        # Si el código ya existe, mostrar cantidad actual y preguntar por nueva cantidad
-        if st.session_state['existing_barcode']:
+        else:
+            # Si el código ya existe, mostrar cantidad actual y preguntar por nueva cantidad
             st.warning(f"El código {st.session_state['existing_barcode']} ya existe con {st.session_state['existing_quantity']} unidades.")
             new_quantity = st.number_input("Ingresa la nueva cantidad para sobrescribir:", min_value=1, step=1, key="new_quantity_field")
 
@@ -154,11 +147,8 @@ def inventory_app():
             delete_barcode = st.text_input("Eliminar producto con código de barras:", key="delete_barcode_field").strip()  # Elimina espacios
             delete_submitted = st.form_submit_button("Eliminar Producto")
 
-            if delete_submitted:
-                if delete_barcode:  # Validar que se haya ingresado un código de barras
-                    df = delete_from_inventory(branch_file, delete_barcode)
-                else:
-                    st.error("Por favor ingresa un código de barras válido.")
+            if delete_submitted and delete_barcode:  # Validar que se haya ingresado un código de barras
+                df = delete_from_inventory(branch_file, delete_barcode)
 
         st.markdown("---")
 
