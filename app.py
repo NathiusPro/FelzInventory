@@ -98,10 +98,11 @@ def inventory_app():
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Only change the state when selecting the branch
-        if st.button("Seleccionar Sucursal"):
-            st.session_state['branch_name'] = branch_name  # Set the branch in session state
-            # Streamlit will naturally rerun after the session state is updated
+        # Use a checkbox to confirm selection instead of using a button
+        confirm = st.checkbox("Confirmar selección de sucursal")
+
+        if confirm:
+            st.session_state['branch_name'] = branch_name
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -168,11 +169,10 @@ def inventory_app():
         # Agregar botón de descarga de CSV
         generate_download_link(df, branch_name)
 
-        # Reset branch selection and form fields when "Cambiar Sucursal" is clicked
-        if st.button("Cambiar Sucursal"):
-            st.session_state['branch_name'] = None  # Clear the branch selection state
+        # Use a checkbox to reset branch selection instead of a button
+        if st.checkbox("Cambiar de Sucursal"):
+            st.session_state['branch_name'] = None
             st.session_state['existing_barcode'] = None
-            # Rely on Streamlit's natural rerun behavior without forcing a rerun
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
