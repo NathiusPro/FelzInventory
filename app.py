@@ -92,24 +92,14 @@ def generate_download_link(df, branch_name):
 def inventory_app():
     if 'branch_name' not in st.session_state:
         st.session_state['branch_name'] = None
-    
-    # Initialize session state for form fields to prevent resetting errors
-    if 'barcode_field' not in st.session_state:
-        st.session_state['barcode_field'] = ''
-    if 'delete_barcode_field' not in st.session_state:
-        st.session_state['delete_barcode_field'] = ''
 
     # Handle branch selection logic
     if st.session_state['branch_name'] is None:
         st.title("Gestión de Inventario por Sucursal")
         branch_name = st.selectbox("Selecciona una sucursal", branches)
 
-        # Avoid triggering a rerun immediately inside button events
         if st.button("Seleccionar Sucursal"):
-            # Set the branch in session state and allow Streamlit to naturally rerun
-            st.session_state['branch_name'] = branch_name
-            st.session_state['barcode_field'] = ''  # Reset field on branch change
-            st.session_state['delete_barcode_field'] = ''  # Reset field on branch change
+            st.session_state['branch_name'] = branch_name  # Set the branch in session state
     else:
         branch_name = st.session_state['branch_name']
         branch_file = get_branch_file(branch_name)
@@ -120,7 +110,7 @@ def inventory_app():
         # Formulario para agregar o actualizar productos
         with st.form("add_inventory_form", clear_on_submit=False):
             st.markdown("### Agregar/Actualizar Inventario")
-            barcode = st.text_input("Escanea el código de barras:", value=st.session_state['barcode_field'], key="barcode_field").strip()  # Elimina espacios
+            barcode = st.text_input("Escanea el código de barras:", key="barcode_field").strip()  # Elimina espacios
             quantity = st.number_input("Ingresa la cantidad:", min_value=1, step=1, key="quantity_field")
 
             # Botón para agregar/actualizar el inventario
@@ -158,7 +148,7 @@ def inventory_app():
         # Formulario para eliminar productos
         with st.form("delete_inventory_form", clear_on_submit=True):
             st.markdown("### Eliminar Producto")
-            delete_barcode = st.text_input("Eliminar producto con código de barras:", value=st.session_state['delete_barcode_field'], key="delete_barcode_field").strip()  # Elimina espacios
+            delete_barcode = st.text_input("Eliminar producto con código de barras:", key="delete_barcode_field").strip()  # Elimina espacios
             delete_submitted = st.form_submit_button("Eliminar Producto")
 
             if delete_submitted:
@@ -176,13 +166,9 @@ def inventory_app():
         # Agregar botón de descarga de CSV
         generate_download_link(df, branch_name)
 
-        # Reset branch selection without rerun
+        # Reset branch selection and form fields when "Cambiar Sucursal" is clicked
         if st.button("Cambiar Sucursal"):
-            # Reset session state for fields
-            st.session_state['branch_name'] = None
-            st.session_state['barcode_field'] = ''
-            st.session_state['delete_barcode_field'] = ''
-            st.session_state['existing_barcode'] = None
+            st.session_state.clear()  # Clear all session state data
 
 # Ejecución de la aplicación
 if __name__ == "__main__":
